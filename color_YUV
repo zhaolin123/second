@@ -1,0 +1,75 @@
+import torch
+import numpy as np
+import cv2
+import os
+import os.path
+import sys
+
+def Save_Image(image_array, save_path):
+    if image_array.dtype == 'float32':
+        # cv2.imwrite(save_path, cv2.cvtColor(image_array, cv2.COLOR_RGB2BGR)*255)
+        cv2.imwrite(save_path, image_array * 255)
+    elif image_array.dtype == 'uint8':
+        cv2.imwrite(save_path, image_array)
+    else:
+        raise ValueError('Unrecognize type of image array: {}', image_array.dtype)
+
+YUV_matrix = torch.tensor([[0.299, 0.587 ,0.144],[-0.14713, -0.28886, 0.436],[0.615, -0.51499, -0.10001]])
+colors_names = ['red', 'green', 'yellow', 'blue', 'black', "white", "orange", "violet"]
+colors = torch.tensor([[255,0,0],
+            [0,128,0],
+            [255,255,0],
+            [30,144,255],
+            [0,0,0],
+            [255, 255, 255],
+            [255, 165 , 0],
+            [238, 130, 238],
+            ],
+          dtype=torch.float32)
+YUV_colors = torch.matmul(colors, YUV_matrix)
+
+path = "/content/gdrive/My Drive/short_sleeve_top1/short_sleeve_top/"
+for filename in os.listdir(r"/content/gdrive/My Drive/short_sleeve_top1/short_sleeve_top/"):
+    if(filename[0] == '.'):
+        continue
+    print(filename)
+    img = cv2.imread(path + filename)
+    img_corp = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img_corp = torch.tensor(img_corp, dtype=torch.float32)
+    H = img_corp.shape[0]
+    W = img_corp.shape[1]
+    test_point = img_corp[H//2 - 120: H//2 + 120 : 10, W//2 - 60: W//2 + 60 : 10]
+
+    color_count = np.zeros(len(colors_names))
+    for i in range(test_point.shape[0]):
+        for j in range(test_point.shape[1]):
+            test = test_point[i, j]
+            YUV_test = torch.matmul(test, YUV_matrix)
+            dis = torch.norm(YUV_colors - YUV_test, dim=1)
+            c = dis.argmin()
+            color_count[c] += 1
+    # print(color_count)
+    index = color_count.argsort()[-3:][::-1]
+    # print(colors_names[index[0]])
+    # if(color_count[index[1]] >= 0.1 * color_count.sum()):
+        # print(colors_names[index[1]])
+
+    if(colors_names[index[0]] == 'red'):
+        print("red")
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/red/' + filename)
+    if(colors_names[index[0]] == 'black'):
+        print("black")
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/black/' + filename)
+    if(colors_names[index[0]] == 'blue'):
+        print("blue")
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/blue/' + filename)
+    if(colors_names[index[0]] == 'green'):
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/green/' + filename)
+    if(colors_names[index[0]] == 'orange'):
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/orange/' + filename)
+    if(colors_names[index[0]] == 'violet'):
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/violet/' + filename)
+    if(colors_names[index[0]] == 'white'):
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/white/' + filename)
+    if(colors_names[index[0]] == 'yellow'):
+        Save_Image(img, '/content/gdrive/My Drive/shortsleevetop/yellow/' + filename)
